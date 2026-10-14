@@ -22,8 +22,8 @@ export default function FormField({
   const targetId = id || htmlFor || '';
 
   return (
-    <div className="form-group form-field">
-      <label htmlFor={targetId} className="form-label">
+    <div className="form-group form-field grupo-campo">
+      <label htmlFor={targetId} className="form-label rotulo-campo">
         {label} {required && <span className="required-asterisk" aria-hidden="true" style={{ color: 'var(--danger)', fontWeight: 800 }}>*</span>}
       </label>
 
@@ -33,7 +33,7 @@ export default function FormField({
         <span
           id={targetId ? `${targetId}-erro` : undefined}
           role="alert"
-          className="form-error field-error-msg"
+          className="form-error field-error-msg texto-erro"
         >
           {error}
         </span>

@@ -60,10 +60,12 @@ export async function cadastrarProduto(novoItem: {
     throw new Error('Erro ao cadastrar produto na API pública');
   }
 
-  const dadosApi = await resposta.json();
+  // A DummyJSON devolve sempre o mesmo id (195) no POST, então dois produtos
+  // ficariam com o mesmo id. Por isso o id é gerado aqui.
+  await resposta.json();
 
   const itemCriado = {
-    id: dadosApi.id ? Number(dadosApi.id) : Date.now(),
+    id: Date.now(),
     title: novoItem.title,
     price: novoItem.price,
     category: novoItem.category,
