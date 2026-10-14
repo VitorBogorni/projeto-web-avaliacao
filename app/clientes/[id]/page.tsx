@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Produto } from '@/types/item';
 import { buscarProdutoPorId, excluirProduto } from '@/lib/api';
+import Modal from '@/components/Modal';
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -17,6 +18,8 @@ function DetalhesConteudo({ params }: PageProps) {
   const [produto, setProduto] = useState<Produto | null>(null);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
+  const [confirmando, setConfirmando] = useState(false);
+  const [erroExclusao, setErroExclusao] = useState('');
 
   // Chamada GET por ID
   useEffect(() => {
@@ -39,15 +42,13 @@ function DetalhesConteudo({ params }: PageProps) {
   async function handleExcluir() {
     if (!produto) return;
 
-    const confirmou = window.confirm(`Deseja realmente excluir o produto "${produto.title}"?`);
-    if (!confirmou) return;
-
+    setConfirmando(false);
+    setErroExclusao('');
     try {
       await excluirProduto(produto.id);
-      alert('Produto excluído com sucesso via API pública (DELETE)!');
       router.push('/');
     } catch {
-      alert('Erro ao excluir produto.');
+      setErroExclusao('Erro ao excluir produto. Tente de novo.');
     }
   }
 
@@ -116,15 +117,31 @@ function DetalhesConteudo({ params }: PageProps) {
             <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1.5rem' }}>
               <button
                 type="button"
-                onClick={handleExcluir}
+                onClick={() => setConfirmando(true)}
                 className="btn-perigo"
               >
                 Excluir Produto (DELETE)
               </button>
             </div>
+            {erroExclusao && (
+              <p role="alert" className="texto-erro">
+                {erroExclusao}
+              </p>
+            )}
           </div>
         </div>
       </article>
+
+      <Modal
+        isOpen={confirmando}
+        onClose={() => setConfirmando(false)}
+        onConfirm={handleExcluir}
+        title="Confirmar Exclusão"
+      >
+        <p>
+          Tem certeza que deseja excluir <strong>{produto.title}</strong>?
+        </p>
+      </Modal>
     </div>
   );
 }
