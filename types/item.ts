@@ -1,3 +1,6 @@
+// ==========================================================================
+// TIPOS · Formato de um produto, do formulário e a lista de categorias.
+// ==========================================================================
 export interface Produto {
   id: number;
   title: string;
@@ -6,6 +9,8 @@ export interface Produto {
   category: string;
   thumbnail: string;
   rating?: number;
+  // De onde veio: catálogo da API ou cadastrado pelo usuário neste navegador
+  origem?: 'api' | 'local';
 }
 
 // Tipos para os formulários
@@ -24,6 +29,14 @@ export const CATEGORIAS = [
   'furniture',
   'groceries',
 ];
+
+// Nome de cada categoria na tela (o valor em inglês é o que a API usa)
+export const NOMES_CATEGORIAS: Record<string, string> = {
+  beauty: 'Beleza',
+  fragrances: 'Perfumes',
+  furniture: 'Móveis',
+  groceries: 'Mercado',
+};
 
 // Compatibilidade
 export type GaleriaItem = Produto & {

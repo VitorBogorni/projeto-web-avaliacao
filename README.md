@@ -2,7 +2,7 @@
 
 Trabalho da Avaliação 2 de Desenvolvimento Web, com o professor Lori Ronaldo Flores Machado Filho.
 
-É um site em Next.js para cadastrar, listar e excluir produtos usando a API pública da DummyJSON (https://dummyjson.com/docs/products).
+Site em Next.js para cadastrar, listar, ver e excluir produtos. O projeto tem **front-end e back-end próprios**: as telas (front-end) conversam com uma API REST feita no próprio Next.js (back-end), em `app/api`.
 
 ## Grupo
 
@@ -11,32 +11,75 @@ Trabalho da Avaliação 2 de Desenvolvimento Web, com o professor Lori Ronaldo F
 - Dieisson Cardoso: validação do formulário e rotas de dados
 - Régis Balz: componentes reutilizáveis e acessibilidade
 
+## Como funciona (em uma frase)
+
+A tela chama uma função de `lib/api.ts` → ela faz uma requisição HTTP para `/api/produtos` → a rota em `app/api` valida, guarda na memória do servidor e responde em JSON → a tela mostra o resultado (ou a mensagem de erro).
+
+```
+Navegador (telas em app/)  ── fetch + JSON ──►  API própria (app/api/)  ──►  lista em memória (lib/servidor/)
+        ▲                                                │
+        └──────────── resposta: 200, 201, 400 ou 404 ◄──┘
+```
+
+## Mapa do projeto
+
+| Pasta / arquivo | O que é | Lado |
+|---|---|---|
+| `app/page.tsx` | **Tela 1 · Início**: lista, busca, filtro por categoria, ordenação, excluir | Front |
+| `app/novo/page.tsx` | **Tela 2 · Novo produto**: formulário com 5 campos validados | Front |
+| `app/produtos/[id]/page.tsx` | **Tela 3 · Detalhes** de um produto | Front |
+| `app/layout.tsx` | Moldura de todas as páginas (menu, rodapé, painel de requisições) | Front |
+| `app/globals.css` | Todo o visual (cores, botões, cards, celular) | Front |
+| `components/` | Peças reutilizáveis: `Navbar`, `ItemCard`, `Modal`, `FormField`, `Toast`, `RegistroApi` | Front |
+| `lib/api.ts` | **Front falando com o back**: as 4 chamadas HTTP e o tratamento dos erros | Front |
+| `lib/validacao.ts` | Regras de cada campo (usadas na tela **e** no servidor) | Front e back |
+| `lib/registro.ts` | Registro das requisições (console F12 e painel "Requisições") | Front |
+| `app/api/produtos/route.ts` | **Rota GET e POST** `/api/produtos` | Back |
+| `app/api/produtos/[id]/route.ts` | **Rota GET, PATCH e DELETE** `/api/produtos/:id` | Back |
+| `app/api/route.ts` | `/api`: lista as rotas da API | Back |
+| `lib/servidor/` | Lista em memória do servidor e respostas padronizadas | Back |
+| `types/` | Formato dos dados (produto, formulário, aviso) | Os dois |
+
+Todo arquivo começa com um comentário dizendo o que ele faz.
+
 ## Telas
 
-- Início (`/`): lista os produtos em cards, com busca pelo nome, filtro por categoria e botão de excluir. Antes de excluir abre uma janela pedindo confirmação.
-- Novo produto (`/novo`): formulário com título, categoria, preço, link da imagem e descrição. Todos os campos são obrigatórios e mostram mensagem de erro quando estão vazios ou inválidos.
-- Detalhes (`/clientes/[id]`): mostra a foto grande, o preço, a descrição e permite excluir o produto.
+- **Início (`/`)**: começa vazia e mostra os produtos cadastrados em cards. Tem busca pelo nome, filtro por categoria, ordenação por preço ou nome, botão Atualizar e excluir com confirmação.
+- **Novo produto (`/novo`)**: título, categoria, preço, link da imagem e descrição. Todos obrigatórios, com mensagem de erro em cada campo e pré-visualização do card ao lado.
+- **Detalhes (`/produtos/:id`)**: foto grande, preço, descrição, código e origem. Permite excluir.
 
-No celular, o menu vira um botão e os cards e a tela de detalhes ficam em uma coluna.
+No celular o menu vira um botão e tudo fica em uma coluna.
 
-## API
+## API própria
 
-As chamadas ficam em `lib/api.ts`:
+| Método | Rota | Resposta |
+|---|---|---|
+| GET | `/api/produtos` | 200 com a lista (filtros `?busca=` e `?categoria=`) |
+| POST | `/api/produtos` | 201 com o produto criado, ou 400 com o erro de cada campo |
+| GET | `/api/produtos/:id` | 200 com o produto, ou 404 |
+| PATCH | `/api/produtos/:id` | 200 com o produto alterado, 400 ou 404 |
+| DELETE | `/api/produtos/:id` | 200, ou 404 |
 
-- GET `https://dummyjson.com/products`
-- GET `https://dummyjson.com/products/{id}`
-- POST `https://dummyjson.com/products/add`
-- DELETE `https://dummyjson.com/products/{id}`
+As telas usam GET, POST e DELETE. O PATCH pode ser testado direto, por exemplo:
 
-A DummyJSON responde ao POST e ao DELETE, mas não grava nada de verdade. Por isso a lista guarda no navegador (localStorage) os produtos cadastrados, assim eles continuam aparecendo depois de recarregar a página.
+```bash
+curl -X PATCH http://localhost:3000/api/produtos/CODIGO -H "Content-Type: application/json" -d "{\"price\": \"49,90\"}"
+```
+
+**Sem banco de dados (retorno mockado, como o enunciado permite):** o servidor guarda os produtos na memória. Na Vercel essa memória zera quando o servidor reinicia, então o navegador também lembra o que foi cadastrado e excluído (`localStorage`) e junta as duas listas.
+
+**Tratamento de respostas e erros (front):** cada código vira uma mensagem para a pessoa: 400 (dados inválidos, mostrados no campo certo), 404 (não encontrado), 500 (erro no servidor) e sem conexão. Toda requisição aparece no console do navegador (F12) e no painel **Requisições** (canto inferior esquerdo). No servidor, cada requisição gera uma linha de log (`[API] POST /api/produtos -> 201`).
 
 ## Acessibilidade
 
-- todo campo tem `label` ligado ao input
+- todo campo tem `label`, texto de ajuda e erro ligados ao campo (`aria-describedby`, `aria-invalid`)
 - link "Pular para o conteúdo principal" no topo
-- imagens com texto alternativo
-- mensagens de erro lidas pelo leitor de tela (`role="alert"`)
-- botões só com ícone ou texto curto têm `aria-label`
+- imagens com texto alternativo; ícones decorativos escondidos do leitor de tela
+- erros e avisos lidos pelo leitor de tela (`role="alert"`, `aria-live`)
+- botões só com ícone têm `aria-label`; menu e filtros informam o estado (`aria-expanded`, `aria-pressed`, `aria-current`)
+- modal com foco no "Cancelar", fecha com Esc
+- respeita "reduzir movimento" do sistema
+- Lighthouse: acessibilidade 100 nas três telas (celular e computador)
 
 ## Como rodar
 
@@ -53,8 +96,9 @@ Para testar o build de produção:
 
 ```bash
 npm run build
+npm start
 ```
 
 ## Tecnologias
 
-Next.js 16, React 19, TypeScript e CSS puro (`app/globals.css`).
+Next.js 16 (telas e rotas de API), React 19, TypeScript, CSS puro (`app/globals.css`) e ícones `lucide-react`.

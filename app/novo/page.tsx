@@ -1,10 +1,19 @@
 'use client';
 
+// ==========================================================================
+// TELA 2 · Novo produto (/novo): formulário com 5 campos.
+// Valida na tela (lib/validacao.ts), envia com POST e mostra
+// os erros que o servidor devolver. Tem pré-visualização do card.
+// ==========================================================================
 import { FormEvent, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { CircleAlert, LoaderCircle } from 'lucide-react';
 import FormField from '@/components/FormField';
-import { cadastrarProduto } from '@/lib/api';
+import ItemCard from '@/components/ItemCard';
+import { cadastrarProduto, ErroApi } from '@/lib/api';
+import { nomeCategoria } from '@/lib/formatar';
+import { guardarAviso } from '@/lib/useToasts';
 import { converterPreco, ErrosFormulario, LIMITES, validarCampo, validarProduto } from '@/lib/validacao';
 import { CATEGORIAS, FormularioProduto } from '@/types/item';
 
@@ -18,6 +27,14 @@ const FORM_VAZIO: FormularioProduto = {
 
 // Ordem dos campos na tela (para levar o foco ao primeiro erro)
 const ORDEM_CAMPOS: (keyof FormularioProduto)[] = ['title', 'category', 'price', 'thumbnail', 'description'];
+
+const DICAS: Record<keyof FormularioProduto, string> = {
+  title: `De ${LIMITES.tituloMin} a ${LIMITES.tituloMax} caracteres.`,
+  category: 'Escolha onde o produto aparece no catálogo.',
+  price: 'Use vírgula para os centavos. Ex.: 19,90',
+  thumbnail: 'Link completo da foto, começando com https://',
+  description: `De ${LIMITES.descricaoMin} a ${LIMITES.descricaoMax} caracteres.`,
+};
 
 export default function NovoProdutoPage() {
   const router = useRouter();
@@ -35,19 +52,21 @@ export default function NovoProdutoPage() {
     }
   }
 
-  // Valida ao sair do campo, sem esperar o envio
+  // Valida ao sair do campo, sem esperar o envio (campo vazio só reclama no envio)
   function aoSair(campo: keyof FormularioProduto) {
+    if (!form[campo].trim() && !erros[campo]) return;
     setErros((atual) => ({ ...atual, [campo]: validarCampo(campo, form[campo]) }));
   }
 
-  // Classe e atributos de acessibilidade de cada campo.
-  // aria-describedby aponta para a mensagem do FormField ("<id>-erro").
+  // Atributos comuns de cada campo: acessibilidade + validação ao sair
   function propsCampo(campo: keyof FormularioProduto) {
     return {
       id: campo,
-      className: erros[campo] ? 'input-formulario borda-erro' : 'input-formulario',
+      name: campo,
+      className: 'entrada',
       'aria-invalid': erros[campo] ? true : undefined,
-      'aria-describedby': erros[campo] ? `${campo}-erro` : undefined,
+      'aria-describedby': erros[campo] ? `${campo}-erro` : `${campo}-dica`,
+      'aria-required': true,
       onBlur: () => aoSair(campo),
     };
   }
@@ -66,98 +85,144 @@ export default function NovoProdutoPage() {
 
     setEnviando(true);
     try {
-      await cadastrarProduto({
+      const criado = await cadastrarProduto({
         title: form.title.trim(),
         category: form.category,
         price: converterPreco(form.price),
         thumbnail: form.thumbnail.trim(),
         description: form.description.trim(),
       });
+      guardarAviso(`"${criado.title}" foi cadastrado.`);
       router.push('/');
-    } catch {
-      setErroEnvio('Não foi possível cadastrar agora. Verifique a conexão e tente de novo.');
+    } catch (erro) {
+      // 400: o servidor também valida; mostra cada erro no campo certo
+      if (erro instanceof ErroApi && erro.status === 400 && Object.keys(erro.campos).length > 0) {
+        setErros(erro.campos as ErrosFormulario);
+        const campo = ORDEM_CAMPOS.find((c) => erro.campos[c]);
+        if (campo) formRef.current?.querySelector<HTMLElement>(`#${campo}`)?.focus();
+      }
+      setErroEnvio(erro instanceof Error ? erro.message : 'Não foi possível cadastrar agora. Tente de novo.');
       setEnviando(false);
     }
   }
 
+  const precoPrevia = converterPreco(form.price);
+  const previa = {
+    id: 0,
+    title: form.title.trim(),
+    description: form.description.trim(),
+    category: form.category,
+    price: Number.isNaN(precoPrevia) ? 0 : precoPrevia,
+    thumbnail: validarCampo('thumbnail', form.thumbnail) ? '' : form.thumbnail.trim(),
+    origem: 'local' as const,
+  };
+
   return (
-    <div className="container">
-      <section className="painel-topo">
-        <h1 className="titulo-pagina">Novo produto</h1>
-        <p className="subtitulo-pagina">Todos os campos são obrigatórios.</p>
+    <>
+      <section className="cabecalho">
+        <div>
+          <p className="sobretitulo">Cadastro</p>
+          <h1 className="titulo">Novo produto</h1>
+          <p className="subtitulo">Preencha os dados abaixo. Todos os campos são obrigatórios.</p>
+        </div>
       </section>
 
-      <form ref={formRef} onSubmit={enviar} noValidate className="cartao-formulario">
-        <FormField id="title" label="Título" required error={erros.title}>
-          <input
-            type="text"
-            value={form.title}
-            maxLength={LIMITES.tituloMax}
-            onChange={(e) => alterar('title', e.target.value)}
-            {...propsCampo('title')}
-          />
-        </FormField>
+      <div className="layout-cadastro">
+        <form ref={formRef} onSubmit={enviar} noValidate className="painel formulario" aria-label="Cadastro de produto">
+          <FormField id="title" label="Título" required error={erros.title} hint={DICAS.title}>
+            <input
+              type="text"
+              value={form.title}
+              maxLength={LIMITES.tituloMax}
+              placeholder="Ex.: Perfume Floral 100 ml"
+              onChange={(e) => alterar('title', e.target.value)}
+              {...propsCampo('title')}
+            />
+          </FormField>
 
-        <FormField id="category" label="Categoria" required error={erros.category}>
-          <select value={form.category} onChange={(e) => alterar('category', e.target.value)} {...propsCampo('category')}>
-            <option value="">Selecione...</option>
-            {CATEGORIAS.map((categoria) => (
-              <option key={categoria} value={categoria}>
-                {categoria}
-              </option>
-            ))}
-          </select>
-        </FormField>
+          <div className="linha-dupla">
+            <FormField id="category" label="Categoria" required error={erros.category} hint={DICAS.category}>
+              <select value={form.category} onChange={(e) => alterar('category', e.target.value)} {...propsCampo('category')}>
+                <option value="">Selecione</option>
+                {CATEGORIAS.map((categoria) => (
+                  <option key={categoria} value={categoria}>
+                    {nomeCategoria(categoria)}
+                  </option>
+                ))}
+              </select>
+            </FormField>
 
-        <FormField id="price" label="Preço (R$)" required error={erros.price}>
-          <input
-            type="text"
-            inputMode="decimal"
-            placeholder="19,90"
-            value={form.price}
-            onChange={(e) => alterar('price', e.target.value)}
-            {...propsCampo('price')}
-          />
-        </FormField>
+            <FormField id="price" label="Preço" required error={erros.price} hint={DICAS.price}>
+              <div className="entrada-prefixo">
+                <span aria-hidden="true">R$</span>
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  placeholder="0,00"
+                  value={form.price}
+                  onChange={(e) => alterar('price', e.target.value)}
+                  {...propsCampo('price')}
+                />
+              </div>
+            </FormField>
+          </div>
 
-        <FormField id="thumbnail" label="Link da imagem" required error={erros.thumbnail}>
-          <input
-            type="url"
-            placeholder="https://..."
-            value={form.thumbnail}
-            onChange={(e) => alterar('thumbnail', e.target.value)}
-            {...propsCampo('thumbnail')}
-          />
-        </FormField>
+          <FormField id="thumbnail" label="Link da imagem" required error={erros.thumbnail} hint={DICAS.thumbnail}>
+            <input
+              type="url"
+              placeholder="https://"
+              value={form.thumbnail}
+              onChange={(e) => alterar('thumbnail', e.target.value)}
+              {...propsCampo('thumbnail')}
+            />
+          </FormField>
 
-        <FormField id="description" label="Descrição" required error={erros.description}>
-          <textarea
-            rows={4}
-            value={form.description}
-            maxLength={LIMITES.descricaoMax}
-            onChange={(e) => alterar('description', e.target.value)}
-            {...propsCampo('description')}
-          />
-          <small className="subtitulo-pagina">
-            {form.description.trim().length}/{LIMITES.descricaoMax} caracteres
-          </small>
-        </FormField>
+          <FormField
+            id="description"
+            label="Descrição"
+            required
+            error={erros.description}
+            hint={DICAS.description}
+            extra={
+              <span className="campo-contador" aria-hidden="true">
+                {form.description.trim().length}/{LIMITES.descricaoMax}
+              </span>
+            }
+          >
+            <textarea
+              rows={4}
+              value={form.description}
+              maxLength={LIMITES.descricaoMax}
+              placeholder="Conte o que é o produto, tamanho, cor, material..."
+              onChange={(e) => alterar('description', e.target.value)}
+              {...propsCampo('description')}
+            />
+          </FormField>
 
-        {erroEnvio && (
-          <p role="alert" className="texto-erro">
-            {erroEnvio}
-          </p>
-        )}
+          {erroEnvio && (
+            <div className="alerta alerta-erro" role="alert">
+              <CircleAlert size={18} aria-hidden="true" />
+              <span>{erroEnvio}</span>
+            </div>
+          )}
 
-        <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end', marginTop: '1rem' }}>
-          <Link href="/" className="btn-secundario">
-            Cancelar
-          </Link>
-          <button type="submit" className="btn-primario" disabled={enviando}>
-            {enviando ? 'Salvando...' : 'Cadastrar produto'}
-          </button>
-        </div>
-      </form>
-    </div>
+          <div className="formulario-acoes">
+            <Link href="/" className="botao botao-secundario">
+              Cancelar
+            </Link>
+            <button type="submit" className="botao botao-primario" disabled={enviando}>
+              {enviando && <LoaderCircle size={18} className="girando" aria-hidden="true" />}
+              {enviando ? 'Salvando...' : 'Cadastrar produto'}
+            </button>
+          </div>
+        </form>
+
+        <aside className="previa" aria-label="Pré-visualização">
+          <p className="previa-titulo">Pré-visualização</p>
+          <ItemCard key={previa.thumbnail} item={previa} apenasVisual />
+          <p className="previa-dica">É assim que o produto vai aparecer no catálogo.</p>
+        </aside>
+      </div>
+    </>
   );
 }

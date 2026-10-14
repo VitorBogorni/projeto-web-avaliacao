@@ -1,176 +1,284 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+// ==========================================================================
+// TELA 1 · Início (/): lista de produtos.
+// Faz GET na API ao abrir; tem busca, filtro por categoria, ordenação,
+// botão Atualizar e exclusão (DELETE) com confirmação no Modal.
+// ==========================================================================
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Produto, CATEGORIAS } from '@/types/item';
-import { buscarProdutos, excluirProduto } from '@/lib/api';
+import { PackageOpen, Plus, RefreshCw, Search, SearchX, WifiOff, X } from 'lucide-react';
 import ItemCard from '@/components/ItemCard';
 import Modal from '@/components/Modal';
 import ToastContainer from '@/components/Toast';
-import { ToastMessage } from '@/types/cliente';
+import { buscarProdutos, excluirProduto } from '@/lib/api';
+import { nomeCategoria, normalizar } from '@/lib/formatar';
+import { pegarAviso, useToasts } from '@/lib/useToasts';
+import { CATEGORIAS, Produto } from '@/types/item';
+
+type Ordem = 'recentes' | 'menor-preco' | 'maior-preco' | 'nome';
+
+const ORDENS: { valor: Ordem; rotulo: string }[] = [
+  { valor: 'recentes', rotulo: 'Mais recentes' },
+  { valor: 'menor-preco', rotulo: 'Menor preço' },
+  { valor: 'maior-preco', rotulo: 'Maior preço' },
+  { valor: 'nome', rotulo: 'Nome (A a Z)' },
+];
+
+function CardEsqueleto() {
+  return (
+    <div className="card card-esqueleto" aria-hidden="true">
+      <div className="card-midia esqueleto" />
+      <div className="card-corpo">
+        <div className="linha esqueleto" style={{ width: '80%' }} />
+        <div className="linha esqueleto" style={{ width: '100%' }} />
+        <div className="linha esqueleto" style={{ width: '60%' }} />
+      </div>
+      <div className="card-rodape">
+        <div className="linha esqueleto" style={{ width: '35%', height: '1.2rem' }} />
+      </div>
+    </div>
+  );
+}
 
 export default function PaginaInicial() {
   const [produtos, setProdutos] = useState<Produto[]>([]);
   const [carregando, setCarregando] = useState(true);
-  const [busca, setBusca] = useState('');
-  const [categoria, setCategoria] = useState('todas');
-  const [itemParaExcluir, setItemParaExcluir] = useState<Produto | null>(null);
   const [erroApi, setErroApi] = useState('');
-  const [toasts, setToasts] = useState<ToastMessage[]>([]);
+  const [busca, setBusca] = useState('');
+  const [categoria, setCategoria] = useState('');
+  const [ordem, setOrdem] = useState<Ordem>('recentes');
+  const [paraExcluir, setParaExcluir] = useState<Produto | null>(null);
+  const [excluindo, setExcluindo] = useState(false);
+  const { toasts, mostrar, remover } = useToasts();
 
-  // Aviso que some sozinho depois de 4 segundos (componente Toast)
-  function avisar(texto: string, tipo: ToastMessage['tipo']) {
-    const id = String(Date.now());
-    setToasts((atuais) => [...atuais, { id, texto, tipo }]);
-    setTimeout(() => setToasts((atuais) => atuais.filter((t) => t.id !== id)), 4000);
-  }
-
-  // 1. Chamada GET ao carregar a página
+  // GET ao abrir a página
   useEffect(() => {
-    carregarDados();
-  }, []);
+    let ativo = true;
+    buscarProdutos()
+      .then((lista) => {
+        if (!ativo) return;
+        setProdutos(lista);
+        // Aviso deixado pela página anterior (ex.: "Produto cadastrado")
+        const aviso = pegarAviso();
+        if (aviso) mostrar(aviso);
+      })
+      .catch((erro: Error) => {
+        if (ativo) setErroApi(erro.message);
+      })
+      .finally(() => {
+        if (ativo) setCarregando(false);
+      });
+    return () => {
+      ativo = false;
+    };
+  }, [mostrar]);
 
-  async function carregarDados() {
+  async function recarregar() {
+    setCarregando(true);
+    setErroApi('');
     try {
-      setCarregando(true);
-      setErroApi('');
       const lista = await buscarProdutos();
       setProdutos(lista);
+      mostrar(lista.length === 1 ? 'Lista atualizada: 1 produto.' : `Lista atualizada: ${lista.length} produtos.`);
     } catch (erro) {
-      setErroApi(erro instanceof Error ? erro.message : 'Erro ao buscar os produtos.');
+      const mensagem = erro instanceof Error ? erro.message : 'Erro ao buscar os produtos.';
+      setErroApi(mensagem);
+      mostrar(mensagem, 'erro');
     } finally {
       setCarregando(false);
     }
   }
 
-  // 2. Filtro em tempo real (Busca e Categoria)
-  const produtosFiltrados = produtos.filter((item) => {
-    const combinaBusca = item.title.toLowerCase().includes(busca.toLowerCase());
-    const combinaCategoria = categoria === 'todas' || item.category === categoria;
-    return combinaBusca && combinaCategoria;
-  });
+  const contagemPorCategoria = useMemo(() => {
+    const contagem: Record<string, number> = {};
+    for (const p of produtos) contagem[p.category] = (contagem[p.category] ?? 0) + 1;
+    return contagem;
+  }, [produtos]);
 
-  // 3. Chamada DELETE ao confirmar no modal
+  const visiveis = useMemo(() => {
+    const termo = normalizar(busca.trim());
+    const filtrados = produtos.filter((p) => {
+      const combinaBusca = !termo || normalizar(`${p.title} ${nomeCategoria(p.category)}`).includes(termo);
+      return combinaBusca && (!categoria || p.category === categoria);
+    });
+    if (ordem === 'menor-preco') return [...filtrados].sort((a, b) => a.price - b.price);
+    if (ordem === 'maior-preco') return [...filtrados].sort((a, b) => b.price - a.price);
+    if (ordem === 'nome') return [...filtrados].sort((a, b) => a.title.localeCompare(b.title, 'pt-BR'));
+    return filtrados;
+  }, [produtos, busca, categoria, ordem]);
+
+  const temFiltro = busca.trim() !== '' || categoria !== '';
+
+  function limparFiltros() {
+    setBusca('');
+    setCategoria('');
+  }
+
+  // DELETE ao confirmar no modal
   async function confirmarExclusao() {
-    if (!itemParaExcluir) return;
-
+    if (!paraExcluir) return;
+    setExcluindo(true);
     try {
-      await excluirProduto(itemParaExcluir.id);
-      // Remove da tela após exclusão
-      setProdutos(produtos.filter((p) => p.id !== itemParaExcluir.id));
-      setItemParaExcluir(null);
-      avisar(`Produto "${itemParaExcluir.title}" excluído.`, 'sucesso');
-    } catch {
-      setItemParaExcluir(null);
-      avisar('Erro ao excluir produto. Tente de novo.', 'erro');
+      await excluirProduto(paraExcluir.id);
+      setProdutos((atuais) => atuais.filter((p) => p.id !== paraExcluir.id));
+      mostrar(`"${paraExcluir.title}" foi excluído.`);
+    } catch (erro) {
+      mostrar(erro instanceof Error ? erro.message : 'Não foi possível excluir. Tente de novo.', 'erro');
+    } finally {
+      setExcluindo(false);
+      setParaExcluir(null);
     }
   }
 
   return (
-    <div className="container">
-      {/* Cabeçalho */}
-      <section className="painel-topo">
-        <h1 className="titulo-pagina">Catálogo de Produtos</h1>
-        <p className="subtitulo-pagina">
-          Consumindo a API pública REST <code>https://dummyjson.com/products</code>.
-        </p>
+    <>
+      <section className="cabecalho">
+        <div>
+          <p className="sobretitulo">Catálogo</p>
+          <h1 className="titulo">Produtos</h1>
+          <p className="subtitulo">Pesquise, filtre por categoria e abra um produto para ver os detalhes.</p>
+        </div>
+        <Link href="/novo" className="botao botao-primario">
+          <Plus size={18} aria-hidden="true" />
+          Novo produto
+        </Link>
       </section>
 
-      {/* Barra de Filtros e Busca (Interações com o Usuário) */}
-      <section className="barra-filtros">
+      <div className="ferramentas">
         <div className="campo-busca">
-          <label htmlFor="input-busca" className="sr-only">Buscar por nome</label>
+          <label htmlFor="busca" className="sr-only">
+            Buscar produtos pelo nome
+          </label>
+          <Search size={18} className="icone-busca" aria-hidden="true" />
           <input
-            id="input-busca"
-            type="text"
-            placeholder="Digite para buscar..."
+            id="busca"
+            type="search"
+            className="entrada"
+            placeholder="Buscar pelo nome"
             value={busca}
             onChange={(e) => setBusca(e.target.value)}
-            className="input-texto"
+            autoComplete="off"
           />
+          {busca && (
+            <button type="button" className="botao-icone limpar" onClick={() => setBusca('')} aria-label="Limpar busca">
+              <X size={16} aria-hidden="true" />
+            </button>
+          )}
         </div>
 
-        <div className="campo-select">
-          <label htmlFor="select-categoria" className="sr-only">Filtrar por Categoria</label>
-          <select
-            id="select-categoria"
-            value={categoria}
-            onChange={(e) => setCategoria(e.target.value)}
-            className="input-select"
-          >
-            <option value="todas">Todas as Categorias</option>
-            {CATEGORIAS.map((cat) => (
-              <option key={cat} value={cat}>
-                {cat}
+        <div>
+          <label htmlFor="ordem" className="sr-only">
+            Ordenar produtos
+          </label>
+          <select id="ordem" className="entrada" value={ordem} onChange={(e) => setOrdem(e.target.value as Ordem)}>
+            {ORDENS.map((o) => (
+              <option key={o.valor} value={o.valor}>
+                {o.rotulo}
               </option>
             ))}
           </select>
         </div>
 
-        <button
-          type="button"
-          onClick={carregarDados}
-          className="btn-recarregar"
-          title="Recarregar dados da API pública"
-        >
+        <button type="button" className="botao botao-secundario" onClick={recarregar} disabled={carregando}>
+          <RefreshCw size={17} className={carregando ? 'girando' : undefined} aria-hidden="true" />
           Atualizar
         </button>
-      </section>
+      </div>
 
-      {/* Contagem */}
-      <p className="texto-contagem">
-        Exibindo <strong>{produtosFiltrados.length}</strong> de {produtos.length} produtos cadastrados
-      </p>
-
-      {/* Listagem ou Estado de Carregamento */}
-      {carregando ? (
-        <div className="estado-aviso">
-          <p>Carregando produtos...</p>
-        </div>
-      ) : erroApi ? (
-        <div className="estado-aviso" role="alert">
-          <p style={{ marginBottom: '1rem' }}>{erroApi}</p>
-          <button type="button" onClick={carregarDados} className="btn-primario">
-            Tentar de novo
+      <div className="chips" role="group" aria-label="Filtrar por categoria">
+        <button type="button" className="chip" aria-pressed={categoria === ''} onClick={() => setCategoria('')}>
+          Todas
+          <span className="chip-numero">{produtos.length}</span>
+        </button>
+        {CATEGORIAS.map((c) => (
+          <button key={c} type="button" className="chip" aria-pressed={categoria === c} onClick={() => setCategoria(c)}>
+            {nomeCategoria(c)}
+            <span className="chip-numero">{contagemPorCategoria[c] ?? 0}</span>
           </button>
-        </div>
-      ) : produtosFiltrados.length === 0 ? (
-        <div className="estado-aviso">
-          <p style={{ marginBottom: '1rem' }}>
-            Nenhum produto cadastrado ainda.
-          </p>
-          <Link href="/novo" className="btn-primario">
-            + Cadastrar Primeiro Produto
-          </Link>
-        </div>
-      ) : (
-        <div className="grade-cards">
-          {produtosFiltrados.map((item) => (
-            <ItemCard
-              key={item.id}
-              item={item}
-              onExcluir={(produto) => setItemParaExcluir(produto)}
-            />
+        ))}
+      </div>
+
+      {carregando ? (
+        <div className="grade" aria-busy="true" aria-label="Carregando produtos">
+          {Array.from({ length: 8 }, (_, i) => (
+            <CardEsqueleto key={i} />
           ))}
         </div>
+      ) : erroApi ? (
+        <div className="estado estado-erro" role="alert">
+          <span className="estado-icone" aria-hidden="true">
+            <WifiOff size={26} />
+          </span>
+          <h2>Não foi possível carregar os produtos</h2>
+          <p>{erroApi}</p>
+          <div className="acoes">
+            <button type="button" className="botao botao-primario" onClick={recarregar}>
+              <RefreshCw size={17} aria-hidden="true" />
+              Tentar de novo
+            </button>
+          </div>
+        </div>
+      ) : produtos.length === 0 ? (
+        <div className="estado">
+          <span className="estado-icone" aria-hidden="true">
+            <PackageOpen size={26} />
+          </span>
+          <h2>Nenhum produto por aqui</h2>
+          <p>Cadastre o primeiro produto para ele aparecer no catálogo.</p>
+          <div className="acoes">
+            <Link href="/novo" className="botao botao-primario">
+              <Plus size={18} aria-hidden="true" />
+              Cadastrar produto
+            </Link>
+          </div>
+        </div>
+      ) : (
+        <>
+          <p className="resumo" aria-live="polite">
+            {visiveis.length === produtos.length
+              ? `${produtos.length} ${produtos.length === 1 ? 'produto' : 'produtos'}`
+              : `Mostrando ${visiveis.length} de ${produtos.length} produtos`}
+          </p>
+
+          {visiveis.length === 0 ? (
+            <div className="estado">
+              <span className="estado-icone" aria-hidden="true">
+                <SearchX size={26} />
+              </span>
+              <h2>Nenhum produto encontrado</h2>
+              <p>Nenhum produto combina com a busca ou a categoria escolhida.</p>
+              {temFiltro && (
+                <div className="acoes">
+                  <button type="button" className="botao botao-secundario" onClick={limparFiltros}>
+                    Limpar filtros
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="grade">
+              {visiveis.map((produto) => (
+                <ItemCard key={produto.id} item={produto} onExcluir={setParaExcluir} />
+              ))}
+            </div>
+          )}
+        </>
       )}
 
-      {/* Modal de Confirmação de Exclusão (Interação com o Usuário) */}
       <Modal
-        isOpen={itemParaExcluir !== null}
-        onClose={() => setItemParaExcluir(null)}
+        isOpen={paraExcluir !== null}
+        onClose={() => !excluindo && setParaExcluir(null)}
         onConfirm={confirmarExclusao}
-        title="Confirmar Exclusão"
+        title="Excluir produto?"
+        carregando={excluindo}
       >
         <p>
-          Tem certeza que deseja excluir <strong>{itemParaExcluir?.title}</strong>?
-        </p>
-        <p style={{ marginTop: '0.5rem', color: '#666', fontSize: '0.9rem' }}>
-          Esta ação enviará uma requisição <code>DELETE</code> para a API pública.
+          <strong>{paraExcluir?.title}</strong> vai sair do catálogo. Essa ação não pode ser desfeita.
         </p>
       </Modal>
 
-      <ToastContainer toasts={toasts} onRemove={(id) => setToasts((atuais) => atuais.filter((t) => t.id !== id))} />
-    </div>
+      <ToastContainer toasts={toasts} onRemove={remover} />
+    </>
   );
 }

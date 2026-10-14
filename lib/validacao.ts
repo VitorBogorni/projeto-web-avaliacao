@@ -1,3 +1,6 @@
+// ==========================================================================
+// FRONT e BACK · Regras de validação do produto (usadas na tela e no servidor).
+// ==========================================================================
 import { CATEGORIAS, FormularioProduto } from '@/types/item';
 
 // Erros do formulário: uma mensagem por campo (só os campos com problema aparecem)
