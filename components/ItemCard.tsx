@@ -35,7 +35,6 @@ export default function ItemCard({ item, onExcluir, apenasVisual = false }: Item
         )}
         <div className="selos">
           {item.category && <span className="selo">{nomeCategoria(item.category)}</span>}
-          {item.origem === 'local' && <span className="selo selo-destaque">Cadastrado por você</span>}
         </div>
       </div>
       <div className="card-corpo">

@@ -1,0 +1,3 @@
+# Nunca enviar os valores secretos para a Vercel (lá eles ficam em Environment Variables)
+.env*
+!.env.example

@@ -3,17 +3,17 @@
 // ==========================================================================
 // TELA 3 · Detalhes (/produtos/:id): um produto pelo código.
 // Faz GET do produto; se não existir mostra a mensagem do 404.
-// Permite excluir (DELETE) com confirmação no Modal.
+// Tem os botões Editar (vai para /produtos/:id/editar) e Excluir (DELETE).
 // ==========================================================================
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, ChevronRight, ImageOff, SearchX, Star, Trash2 } from 'lucide-react';
+import { ArrowLeft, ChevronRight, ImageOff, Pencil, SearchX, Star, Trash2 } from 'lucide-react';
 import Modal from '@/components/Modal';
 import ToastContainer from '@/components/Toast';
 import { buscarProdutoPorId, excluirProduto } from '@/lib/api';
 import { formatarNota, formatarPreco, nomeCategoria } from '@/lib/formatar';
-import { guardarAviso, useToasts } from '@/lib/useToasts';
+import { guardarAviso, pegarAviso, useToasts } from '@/lib/useToasts';
 import { Produto } from '@/types/item';
 
 export default function DetalhesProdutoPage() {
@@ -36,7 +36,11 @@ export default function DetalhesProdutoPage() {
     let ativo = true;
     buscarProdutoPorId(id)
       .then((dados) => {
-        if (ativo) setProduto(dados);
+        if (!ativo) return;
+        setProduto(dados);
+        // Aviso deixado pela edição ("Alterações salvas")
+        const aviso = pegarAviso();
+        if (aviso) mostrar(aviso);
       })
       .catch((e: Error) => {
         if (ativo) setErro(e.message);
@@ -47,7 +51,7 @@ export default function DetalhesProdutoPage() {
     return () => {
       ativo = false;
     };
-  }, [id, idValido]);
+  }, [id, idValido, mostrar]);
 
   // DELETE
   async function confirmarExclusao() {
@@ -132,7 +136,6 @@ export default function DetalhesProdutoPage() {
         <div className="detalhes-info">
           <div className="detalhes-selos">
             <span className="selo">{nomeCategoria(produto.category)}</span>
-            {produto.origem === 'local' && <span className="selo selo-destaque">Cadastrado por você</span>}
           </div>
 
           <h1 className="detalhes-titulo">{produto.title}</h1>
@@ -153,14 +156,16 @@ export default function DetalhesProdutoPage() {
             <dd>{produto.id}</dd>
             <dt>Categoria</dt>
             <dd>{nomeCategoria(produto.category)}</dd>
-            <dt>Origem</dt>
-            <dd>{produto.origem === 'local' ? 'Cadastrado neste navegador' : 'Catálogo da API'}</dd>
           </dl>
 
           <div className="detalhes-acoes">
             <Link href="/" className="botao botao-secundario">
               <ArrowLeft size={18} aria-hidden="true" />
               Voltar
+            </Link>
+            <Link href={`/produtos/${produto.id}/editar`} className="botao botao-primario">
+              <Pencil size={18} aria-hidden="true" />
+              Editar
             </Link>
             <button type="button" className="botao botao-perigo-contorno" onClick={() => setConfirmando(true)}>
               <Trash2 size={18} aria-hidden="true" />

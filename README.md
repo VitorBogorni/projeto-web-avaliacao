@@ -32,10 +32,12 @@ Navegador (telas em app/)  ── fetch + JSON ──►  API própria (app/api/
 | `app/categorias/page.tsx` | **Tela de categorias**: cadastrar e excluir categorias | Front |
 | `app/page.tsx` | **Tela 1 · Início**: lista, busca, filtro por categoria, ordenação, excluir | Front |
 | `app/novo/page.tsx` | **Tela 2 · Novo produto**: formulário com 5 campos validados | Front |
-| `app/produtos/[id]/page.tsx` | **Tela 3 · Detalhes** de um produto | Front |
+| `app/produtos/[id]/page.tsx` | **Tela 3 · Detalhes** de um produto (botões Editar e Excluir) | Front |
+| `app/produtos/[id]/editar/page.tsx` | **Editar produto**: mesmo formulário, salva com PATCH | Front |
 | `app/layout.tsx` | Moldura de todas as páginas (menu do topo) | Front |
 | `app/globals.css` | Todo o visual (cores, botões, cards, celular) | Front |
-| `components/` | Peças reutilizáveis: `Navbar`, `ItemCard`, `Modal`, `FormField`, `Toast` | Front |
+| `components/` | Peças reutilizáveis: `Navbar`, `ItemCard`, `Modal`, `FormField`, `FormularioProduto`, `Toast` | Front |
+| `.env.example` | Lista das variáveis de ambiente (sem os valores) | Config |
 | `lib/api.ts` | **Front falando com o back**: as 4 chamadas HTTP e o tratamento dos erros | Front |
 | `lib/validacao.ts` | Regras de cada campo (usadas na tela **e** no servidor) | Front e back |
 | `lib/registro.ts` | Log de cada requisição no console do navegador (F12) | Front |
@@ -55,7 +57,8 @@ Todo arquivo começa com um comentário dizendo o que ele faz.
 - **Início (`/`)**: começa vazia e mostra os produtos cadastrados em cards. Tem busca pelo nome, filtro por categoria, ordenação por preço ou nome, botão Atualizar e excluir com confirmação.
 - **Novo produto (`/novo`)**: título, categoria, preço, link da imagem e descrição. Todos obrigatórios, com mensagem de erro em cada campo e pré-visualização do card ao lado.
 - **Categorias (`/categorias`)**: cadastrar categoria (nome obrigatório, sem repetir) e excluir. Categoria com produtos não pode ser excluída.
-- **Detalhes (`/produtos/:id`)**: foto grande, preço, descrição, código e origem. Permite excluir.
+- **Detalhes (`/produtos/:id`)**: foto grande, preço, descrição e código. Botões Editar e Excluir.
+- **Editar (`/produtos/:id/editar`)**: o mesmo formulário do cadastro, já preenchido.
 
 No celular o menu vira um botão e tudo fica em uma coluna.
 
@@ -77,11 +80,7 @@ No celular o menu vira um botão e tudo fica em uma coluna.
 
 As rotas de produtos e categorias só respondem com login (sem sessão: 401).
 
-As telas usam GET, POST e DELETE. O PATCH pode ser testado direto, por exemplo:
-
-```bash
-curl -X PATCH http://localhost:3000/api/produtos/CODIGO -H "Content-Type: application/json" -d "{\"price\": \"49,90\"}"
-```
+As telas usam GET, POST, PATCH (editar) e DELETE.
 
 **Sem banco de dados (retorno mockado, como o enunciado permite):** o servidor guarda os produtos na memória. Na Vercel essa memória zera quando o servidor reinicia, então o navegador também lembra o que foi cadastrado e excluído (`localStorage`) e junta as duas listas.
 
@@ -98,9 +97,18 @@ curl -X PATCH http://localhost:3000/api/produtos/CODIGO -H "Content-Type: applic
 - respeita "reduzir movimento" do sistema
 - Lighthouse: acessibilidade 100 nas três telas (celular e computador)
 
+## Variáveis de ambiente
+
+Os valores secretos não ficam no código. Os nomes estão em `.env.example`:
+
+- `SESSAO_SEGREDO`: segredo que assina o cookie de sessão
+- `ADMIN_NOME`, `ADMIN_EMAIL`, `ADMIN_SENHA`: usuário que entra no sistema
+
+No computador, os valores ficam em `.env.local` (fora do Git). Na Vercel, em **Settings › Environment Variables**.
+
 ## Como rodar
 
-Precisa do Node.js instalado.
+Precisa do Node.js instalado. Copie `.env.example` para `.env.local` e preencha os valores.
 
 ```bash
 npm install
@@ -127,7 +135,6 @@ npm start
 ## Melhorias futuras
 
 - Banco de dados de verdade (por exemplo PostgreSQL com Prisma), para os dados ficarem salvos para todos.
-- Tela de edição de produto, usando a rota `PATCH /api/produtos/:id` que já existe.
 - Cadastro de usuários com perfis (administrador e vendedor) e troca de senha.
 - Envio da foto do produto pelo computador, em vez de colar um link.
 - Controle de estoque, com aviso de produto acabando.

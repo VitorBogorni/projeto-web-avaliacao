@@ -8,21 +8,26 @@ import { createHmac, timingSafeEqual } from 'crypto';
 export const COOKIE_SESSAO = 'sessao';
 export const DURACAO_SESSAO_SEGUNDOS = 8 * 60 * 60; // 8 horas
 
-const SEGREDO = process.env.SESSAO_SEGREDO || 'catalogo-de-produtos-segredo-de-desenvolvimento';
+// Valores secretos vêm de variáveis de ambiente (nunca escritos no código):
+// no PC ficam no arquivo .env.local; em produção, no painel da Vercel.
+// Lista das variáveis (sem valores) em .env.example.
+const SEGREDO = process.env.SESSAO_SEGREDO ?? '';
 
 export interface Usuario {
   nome: string;
   email: string;
 }
 
-// Usuário de acesso para a demonstração (sem banco de dados, como permite o enunciado)
+// Usuário administrador (configurado nas variáveis de ambiente)
 const USUARIOS = [
   {
-    nome: 'Administrador',
-    email: 'admin@catalogo.com',
-    senha: process.env.SENHA_ADMIN || 'catalogo123',
+    nome: process.env.ADMIN_NOME || 'Administrador',
+    email: (process.env.ADMIN_EMAIL ?? '').trim().toLowerCase(),
+    senha: process.env.ADMIN_SENHA ?? '',
   },
 ];
+
+const configurado = () => SEGREDO.length >= 16 && USUARIOS.every((u) => u.email && u.senha);
 
 function assinar(texto: string) {
   return createHmac('sha256', SEGREDO).update(texto).digest('base64url');
@@ -36,6 +41,10 @@ function comparar(a: string, b: string) {
 
 // Devolve o usuário se e-mail e senha conferem; senão, null
 export function autenticar(email: string, senha: string): Usuario | null {
+  if (!configurado()) {
+    console.error('[login] Configure SESSAO_SEGREDO, ADMIN_EMAIL e ADMIN_SENHA nas variáveis de ambiente.');
+    return null;
+  }
   const encontrado = USUARIOS.find((u) => u.email === email.trim().toLowerCase());
   if (!encontrado || !comparar(encontrado.senha, senha)) return null;
   return { nome: encontrado.nome, email: encontrado.email };
@@ -51,7 +60,7 @@ export function criarToken(usuario: Usuario) {
 
 // Confere a assinatura e a validade; devolve o usuário ou null
 export function lerToken(token: string | undefined): Usuario | null {
-  if (!token) return null;
+  if (!token || !configurado()) return null;
   const [dados, assinatura] = token.split('.');
   if (!dados || !assinatura || !comparar(assinatura, assinar(dados))) return null;
   try {

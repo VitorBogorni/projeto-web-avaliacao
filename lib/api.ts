@@ -1,6 +1,7 @@
 // ==========================================================================
 // FRONT · Comunicação com a API. As telas chamam estas funções e nunca o fetch direto.
-// Produtos: GET /api/produtos, GET /api/produtos/:id, POST /api/produtos, DELETE /api/produtos/:id.
+// Produtos: GET /api/produtos, GET /api/produtos/:id, POST /api/produtos,
+// PATCH /api/produtos/:id, DELETE /api/produtos/:id.
 // Categorias: GET /api/categorias, POST /api/categorias, DELETE /api/categorias/:id.
 // Login: POST /api/login, POST /api/logout, GET /api/sessao.
 // Cada requisição é registrada (console + painel) e todo erro vira ErroApi com o código HTTP.
@@ -138,6 +139,30 @@ export async function cadastrarProduto(novoItem: {
   });
   gravarLista(STORAGE_KEY, [produto, ...produtosLocais()]);
   return { ...produto, origem: 'local' };
+}
+
+// PATCH /api/produtos/:id: altera os dados do produto
+export async function atualizarProduto(
+  id: number | string,
+  dados: { title: string; price: number; category: string; thumbnail: string; description: string }
+): Promise<Produto> {
+  const local = produtosLocais().find((p) => String(p.id) === String(id));
+  let produto: Produto;
+  try {
+    ({ produto } = await requisitar<{ produto: Produto }>(`/produtos/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(dados),
+    }));
+  } catch (erro) {
+    // 404 de um produto guardado neste navegador = o servidor reiniciou; a alteração vale aqui
+    if (!(erro instanceof ErroApi && erro.status === 404 && local)) throw erro;
+    produto = { ...local, ...dados };
+  }
+  if (local) {
+    gravarLista(STORAGE_KEY, produtosLocais().map((p) => (String(p.id) === String(id) ? { ...p, ...produto } : p)));
+  }
+  return produto;
 }
 
 // 4. DELETE /api/produtos/:id
