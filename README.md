@@ -1,60 +1,60 @@
-# Catálogo de Produtos & Imagens - Consumo de API REST Pública
+# Catálogo de Produtos
 
-Aplicação Web simples e responsiva desenvolvida em **Next.js**, **React** e **CSS**, consumindo a **API REST pública gratuita da [DummyJSON](https://dummyjson.com/docs/products)** para exibição e gerenciamento de produtos com fotos.
+Trabalho da Avaliação 2 de Desenvolvimento Web, com o professor Lori Ronaldo Flores Machado Filho.
 
-> **Disciplina:** Desenvolvimento Web (Avaliação 2)  
-> **Professor:** Lori Ronaldo Flores Machado Filho  
+É um site em Next.js para cadastrar, listar e excluir produtos usando a API pública da DummyJSON (https://dummyjson.com/docs/products).
 
----
+## Grupo
 
-## 👥 Integrantes do Grupo
+- Vitor Bogorni: estrutura do projeto, layout e integração com a API
+- Lucas Smaniotto: visual das telas e responsividade
+- Dieisson Cardoso: validação do formulário e rotas de dados
+- Régis Balz: componentes reutilizáveis e acessibilidade
 
-| Integrante | Função / Responsabilidade |
-| :--- | :--- |
-| **Vitor Bogorni** | Estruturação da aplicação, navegação e integração com a API pública (GET, POST, DELETE) |
-| **Lucas Smaniotto** | Desenvolvimento visual das telas e responsividade desktop e mobile |
-| **Dieisson Cardoso** | Validações do formulário e manipulação de dados dos endpoints |
-| **Régis Balz** | Componentes reutilizáveis (Cards, Modal, Navbar) e acessibilidade (WCAG AA) |
+## Telas
 
----
+- Início (`/`): lista os produtos em cards, com busca pelo nome, filtro por categoria e botão de excluir. Antes de excluir abre uma janela pedindo confirmação.
+- Novo produto (`/novo`): formulário com título, categoria, preço, link da imagem e descrição. Todos os campos são obrigatórios e mostram mensagem de erro quando estão vazios ou inválidos.
+- Detalhes (`/clientes/[id]`): mostra a foto grande, o preço, a descrição e permite excluir o produto.
 
-## 📋 Atendimento aos Requisitos Mínimos da Avaliação
+No celular, o menu vira um botão e os cards e a tela de detalhes ficam em uma coluna.
 
-| Requisito Mínimo | Como foi implementado |
-| :--- | :--- |
-| **3 telas (Desktop e Mobile)** | 1. **Início (`/`)**: Lista de produtos em cards com fotos e filtros.<br>2. **Novo (`/novo`)**: Formulário de cadastro com validação.<br>3. **Detalhes (`/clientes/[id]`)**: Ficha completa com foto grande, preço e exclusão. |
-| **2 componentes reutilizáveis** | `Navbar` (menu responsivo), `ItemCard` (card de produto com foto) e `Modal` (janela de confirmação). |
-| **3 interações do usuário** | 1. Busca em tempo real por nome.<br>2. Filtro por categoria (dropdown select).<br>3. Modal de confirmação para exclusão.<br>4. Menu mobile responsivo. |
-| **1 formulário com 5 ou mais campos e validação** | Formulário em `/novo` com **5 campos obrigatórios**: Título, Categoria, Preço, URL da Imagem e Descrição, com exibição de mensagens de erro claras em caso de campos vazios ou inválidos. |
-| **Consumir API REST (GET + POST + DELETE)** | Consumo da API pública oficial do **DummyJSON**:<br>- `GET https://dummyjson.com/products` (busca produtos com fotos)<br>- `GET https://dummyjson.com/products/[id]` (detalhes do produto)<br>- `POST https://dummyjson.com/products/add` (cadastro com foto)<br>- `DELETE https://dummyjson.com/products/[id]` (exclusão) |
-| **Acessibilidade (WCAG AA / Lighthouse > 90)** | Rótulos `<label htmlFor>` para todos os inputs, contraste de cores nítido, link de pular para o conteúdo principal, tags semânticas e textos alternativos (`alt`) em todas as imagens. |
-| **Publicação na Vercel** | Projeto pronto para deploy na Vercel com build validado via Next.js. |
+## API
 
----
+As chamadas ficam em `lib/api.ts`:
 
-## 🚀 Como Executar o Projeto Localmente
+- GET `https://dummyjson.com/products`
+- GET `https://dummyjson.com/products/{id}`
+- POST `https://dummyjson.com/products/add`
+- DELETE `https://dummyjson.com/products/{id}`
 
-1. Abra o terminal na pasta do projeto:
-   ```bash
-   cd projeto-web-avaliacao
-   ```
+A DummyJSON responde ao POST e ao DELETE, mas não grava nada de verdade. Por isso a lista guarda no navegador (localStorage) os produtos cadastrados, assim eles continuam aparecendo depois de recarregar a página.
 
-2. Instale as dependências:
-   ```bash
-   npm install
-   ```
+## Acessibilidade
 
-3. Inicie o servidor de desenvolvimento:
-   ```bash
-   npm run dev
-   ```
+- todo campo tem `label` ligado ao input
+- link "Pular para o conteúdo principal" no topo
+- imagens com texto alternativo
+- mensagens de erro lidas pelo leitor de tela (`role="alert"`)
+- botões só com ícone ou texto curto têm `aria-label`
 
-4. Acesse no navegador:
-   ```text
-   http://localhost:3000
-   ```
+## Como rodar
 
-5. Para validar o build de produção:
-   ```bash
-   npm run build
-   ```
+Precisa do Node.js instalado.
+
+```bash
+npm install
+npm run dev
+```
+
+Depois é só abrir http://localhost:3000.
+
+Para testar o build de produção:
+
+```bash
+npm run build
+```
+
+## Tecnologias
+
+Next.js 16, React 19, TypeScript e CSS puro (`app/globals.css`).
