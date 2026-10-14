@@ -133,23 +133,7 @@ textarea {
   padding: 2rem 1.25rem 4rem;
 }
 
-.rodape {
-  border-top: 1px solid var(--borda);
-  background: var(--superficie);
-}
 
-.rodape-interno {
-  max-width: var(--largura);
-  margin: 0 auto;
-  /* espaço embaixo para o botão "Requisições" não cobrir o texto */
-  padding: 1.25rem 1.25rem 5rem;
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  gap: 0.5rem;
-  font-size: 0.875rem;
-  color: var(--texto-suave);
-}
 
 /* ---------- Barra de navegação ---------- */
 
@@ -907,6 +891,17 @@ select.entrada {
   margin-top: 0.1rem;
 }
 
+.alerta-aviso {
+  color: #7a2e0e;
+  background: #fffaeb;
+  border: 1px solid #fedf89;
+}
+
+.alerta a {
+  color: inherit;
+  font-weight: 700;
+}
+
 .alerta-erro {
   color: var(--perigo-forte);
   background: var(--perigo-suave);
@@ -1266,208 +1261,257 @@ select.entrada {
   }
 }
 
-/* ---------- Registro de requisições ---------- */
+/* ---------- Usuário no menu ---------- */
 
-.registro {
-  position: fixed;
-  left: 1rem;
-  bottom: 1rem;
-  z-index: 70;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0.6rem;
+.navbar-divisor {
+  width: 1px;
+  height: 28px;
+  margin: 0 0.25rem;
+  background: var(--borda);
 }
 
-.registro-botao {
+.usuario {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  min-height: 42px;
-  padding: 0.5rem 0.9rem;
-  font-weight: 600;
+  padding: 0 0.25rem;
   font-size: 0.9rem;
-  color: #ffffff;
-  background: #1f2937;
-  border: 0;
-  border-radius: 999px;
-  box-shadow: var(--sombra);
-  cursor: pointer;
+  font-weight: 600;
+  color: var(--texto-2);
 }
 
-.registro-botao:hover {
-  background: #111827;
-}
-
-.registro-contador {
-  min-width: 1.5rem;
-  padding: 0 0.4rem;
-  font-size: 0.78rem;
-  text-align: center;
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 999px;
-}
-
-.registro-ponto {
-  width: 8px;
-  height: 8px;
+.usuario-avatar {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: var(--primaria);
+  background: var(--primaria-suave);
   border-radius: 50%;
 }
 
-.registro-ponto.status-ok {
-  background: #4ade80;
+.usuario-mobile {
+  padding: 0.25rem 0.85rem 0.5rem;
+  font-size: 0.85rem;
+  color: var(--texto-suave);
 }
 
-.registro-ponto.status-aviso {
-  background: #fbbf24;
+button.nav-link {
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
 }
 
-.registro-ponto.status-falha {
-  background: #f87171;
+@media (max-width: 900px) {
+  .usuario-nome {
+    display: none;
+  }
 }
 
-.registro-painel {
-  width: min(460px, calc(100vw - 2rem));
-  max-height: min(60vh, 520px);
+/* ---------- Tela de login ---------- */
+
+.login {
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+  gap: 2.5rem;
+  align-items: center;
+  min-height: calc(100vh - 220px);
+}
+
+.login-apresentacao {
   display: flex;
   flex-direction: column;
-  background: var(--superficie);
-  border: 1px solid var(--borda);
-  border-radius: var(--raio);
-  box-shadow: var(--sombra-lg);
-  overflow: hidden;
-  animation: subir 0.18s ease-out;
+  gap: 0.9rem;
+  padding: 2rem 0;
 }
 
-.registro-topo {
+.marca-icone-grande {
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  margin-bottom: 0.5rem;
+}
+
+.login-titulo {
+  font-size: clamp(1.8rem, 3.4vw, 2.6rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.12;
+  max-width: 18ch;
+}
+
+.login-texto {
+  font-size: 1.05rem;
+  color: var(--texto-suave);
+  max-width: 46ch;
+}
+
+.login-beneficios {
+  display: grid;
+  gap: 0.85rem;
+  margin: 0.75rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.login-beneficios li {
   display: flex;
-  justify-content: space-between;
   align-items: flex-start;
-  gap: 1rem;
-  padding: 0.9rem 0.75rem 0.75rem 1rem;
-  border-bottom: 1px solid var(--borda);
+  gap: 0.75rem;
+  color: var(--texto-2);
 }
 
-.registro-titulo {
-  font-size: 1rem;
+.login-beneficios svg {
+  flex: none;
+  margin-top: 0.15rem;
+  color: var(--primaria);
+}
+
+.login-cartao {
+  padding: 2rem;
+  box-shadow: var(--sombra);
+}
+
+.login-form {
+  display: grid;
+  gap: 1.1rem;
+  margin-top: 1.5rem;
+}
+
+.entrada-com-botao {
+  position: relative;
+}
+
+.entrada-com-botao .entrada {
+  padding-right: 3rem;
+}
+
+.entrada-com-botao .botao-icone {
+  position: absolute;
+  right: 0.2rem;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.botao-largo {
+  width: 100%;
+  min-height: 46px;
+}
+
+
+@media (max-width: 860px) {
+  .login {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    min-height: 0;
+  }
+
+  .login-apresentacao {
+    padding: 0;
+  }
+
+  .login-beneficios {
+    display: none;
+  }
+
+  .login-cartao {
+    padding: 1.5rem;
+  }
+}
+
+/* ---------- Tela de categorias ---------- */
+
+.layout-categorias {
+  display: grid;
+  grid-template-columns: 360px minmax(0, 1fr);
+  gap: 1.5rem;
+  align-items: start;
+}
+
+.painel-titulo {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1.05rem;
   font-weight: 700;
 }
 
-.registro-sub {
-  font-size: 0.8rem;
-  color: var(--texto-suave);
+.lista-categorias {
+  padding: 1.5rem;
+  display: grid;
+  gap: 1rem;
 }
 
-.registro-acoes {
-  display: flex;
-  gap: 0.15rem;
-}
-
-.registro-acoes .botao-icone {
-  width: 34px;
-  height: 34px;
-}
-
-.registro-acoes .botao-icone:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
-.registro-vazio {
-  padding: 1.25rem 1rem;
-  font-size: 0.9rem;
-  color: var(--texto-suave);
-}
-
-.registro-lista {
+.categorias {
   margin: 0;
   padding: 0;
   list-style: none;
-  overflow-y: auto;
+  border: 1px solid var(--borda);
+  border-radius: var(--raio-sm);
 }
 
-.registro-item {
+.categoria-linha {
   display: grid;
-  grid-template-columns: auto 1fr auto;
+  grid-template-columns: auto 1fr auto auto;
   align-items: center;
-  gap: 0.25rem 0.6rem;
-  padding: 0.65rem 1rem;
+  gap: 0.85rem;
+  padding: 0.6rem 0.6rem 0.6rem 0.9rem;
   border-bottom: 1px solid var(--borda);
-  font-size: 0.85rem;
 }
 
-.registro-item:last-child {
+.categoria-linha:last-child {
   border-bottom: 0;
 }
 
-.metodo {
-  min-width: 3.9rem;
-  padding: 0.12rem 0.4rem;
-  font-family: ui-monospace, 'Cascadia Mono', Consolas, monospace;
-  font-size: 0.75rem;
-  font-weight: 700;
-  text-align: center;
-  border-radius: 6px;
-  color: #ffffff;
-  background: #4b5563;
+.categoria-icone {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  color: var(--primaria);
+  background: var(--primaria-suave);
+  border-radius: 10px;
 }
 
-.metodo-get {
-  background: #1d4ed8;
+.categoria-nome {
+  font-weight: 600;
 }
 
-.metodo-post {
-  background: #067647;
-}
-
-.metodo-patch {
-  background: #92400e;
-}
-
-.metodo-delete {
-  background: #b42318;
-}
-
-.registro-caminho {
-  font-family: ui-monospace, 'Cascadia Mono', Consolas, monospace;
-  font-size: 0.8rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.status {
-  padding: 0.12rem 0.5rem;
-  font-size: 0.75rem;
-  font-weight: 700;
-  border-radius: 999px;
-  white-space: nowrap;
-}
-
-.status.status-ok {
-  color: var(--sucesso);
-  background: var(--sucesso-suave);
-}
-
-.status.status-aviso {
-  color: #93370d;
-  background: #fffaeb;
-}
-
-.status.status-falha {
-  color: var(--perigo);
-  background: var(--perigo-suave);
-}
-
-.registro-meta {
-  grid-column: 2 / -1;
-  font-size: 0.78rem;
+.categoria-total {
+  font-size: 0.88rem;
   color: var(--texto-suave);
 }
 
-/* No celular os avisos sobem para não cobrir o botão do registro */
-@media (max-width: 560px) {
-  .toast-container {
-    bottom: 4.5rem;
+.lista-vazia {
+  display: grid;
+  justify-items: center;
+  gap: 0.5rem;
+  padding: 2rem 1rem;
+  color: var(--texto-suave);
+  text-align: center;
+}
+
+.lista-dica {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+  color: var(--texto-suave);
+}
+
+@media (max-width: 820px) {
+  .layout-categorias {
+    grid-template-columns: 1fr;
+  }
+
+  .categoria-total {
+    display: none;
+  }
+
+  .categoria-linha {
+    grid-template-columns: auto 1fr auto;
   }
 }

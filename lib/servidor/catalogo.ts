@@ -4,7 +4,7 @@
 // Na Vercel a memória zera quando o servidor reinicia; por isso o front
 // também guarda no navegador o que foi cadastrado e excluído.
 // ==========================================================================
-import { CATEGORIAS, FormularioProduto, Produto } from '@/types/item';
+import { FormularioProduto, Produto } from '@/types/item';
 import { converterPreco, ErrosFormulario, validarCampo } from '@/lib/validacao';
 
 const global = globalThis as typeof globalThis & { __catalogo?: Produto[] };
@@ -48,7 +48,7 @@ export function validar(corpo: Record<string, unknown>, parcial = false) {
 function normalizarDados(corpo: Record<string, unknown>) {
   const dados: Partial<Produto> = {};
   if ('title' in corpo) dados.title = comoTexto(corpo.title).trim();
-  if ('category' in corpo && CATEGORIAS.includes(comoTexto(corpo.category))) dados.category = comoTexto(corpo.category);
+  if ('category' in corpo) dados.category = comoTexto(corpo.category).trim();
   if ('price' in corpo) dados.price = converterPreco(comoTexto(corpo.price));
   if ('thumbnail' in corpo) dados.thumbnail = comoTexto(corpo.thumbnail).trim();
   if ('description' in corpo) dados.description = comoTexto(corpo.description).trim();
@@ -77,4 +77,9 @@ export function remover(id: number) {
   if (indice < 0) return false;
   lista.splice(indice, 1);
   return true;
+}
+
+// Quantos produtos do servidor usam a categoria (para não excluir categoria em uso)
+export function contarPorCategoria(nome: string) {
+  return catalogo().filter((p) => p.category === nome).length;
 }

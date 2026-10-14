@@ -1,7 +1,8 @@
 // ==========================================================================
-// FRONT e BACK · Regras de validação do produto (usadas na tela e no servidor).
+// FRONT e BACK · Regras de validação do produto, da categoria e do login
+// (usadas na tela e no servidor).
 // ==========================================================================
-import { CATEGORIAS, FormularioProduto } from '@/types/item';
+import { FormularioProduto, LIMITES_CATEGORIA } from '@/types/item';
 
 // Erros do formulário: uma mensagem por campo (só os campos com problema aparecem)
 export type ErrosFormulario = Partial<Record<keyof FormularioProduto, string>>;
@@ -30,8 +31,9 @@ function urlValida(valor: string): boolean {
   }
 }
 
-// Valida um campo só (usado quando a pessoa sai do campo)
-export function validarCampo(campo: keyof FormularioProduto, valor: string): string | undefined {
+// Valida um campo só (usado quando a pessoa sai do campo).
+// "categorias": nomes das categorias existentes (a tela informa; o servidor confere só o formato).
+export function validarCampo(campo: keyof FormularioProduto, valor: string, categorias?: string[]): string | undefined {
   const texto = valor.trim();
 
   switch (campo) {
@@ -43,7 +45,8 @@ export function validarCampo(campo: keyof FormularioProduto, valor: string): str
 
     case 'category':
       if (!texto) return 'Escolha uma categoria.';
-      if (!CATEGORIAS.includes(texto)) return 'Categoria inválida.';
+      if (texto.length > LIMITES_CATEGORIA.max) return 'Categoria inválida.';
+      if (categorias && !categorias.includes(texto)) return 'Escolha uma categoria da lista.';
       return undefined;
 
     case 'price': {
@@ -69,11 +72,58 @@ export function validarCampo(campo: keyof FormularioProduto, valor: string): str
 }
 
 // Valida o formulário inteiro (usado no envio)
-export function validarProduto(form: FormularioProduto): ErrosFormulario {
+export function validarProduto(form: FormularioProduto, categorias?: string[]): ErrosFormulario {
   const erros: ErrosFormulario = {};
   for (const campo of Object.keys(form) as (keyof FormularioProduto)[]) {
-    const erro = validarCampo(campo, form[campo]);
+    const erro = validarCampo(campo, form[campo], categorias);
     if (erro) erros[campo] = erro;
   }
   return erros;
+}
+
+// ---------- Login ----------
+
+export interface FormularioLogin {
+  email: string;
+  senha: string;
+}
+
+export type ErrosLogin = Partial<Record<keyof FormularioLogin, string>>;
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+export function validarCampoLogin(campo: keyof FormularioLogin, valor: string): string | undefined {
+  if (campo === 'email') {
+    if (!valor.trim()) return 'Informe o e-mail.';
+    if (!EMAIL_RE.test(valor.trim())) return 'Digite um e-mail válido. Ex.: nome@empresa.com';
+    return undefined;
+  }
+  if (!valor) return 'Informe a senha.';
+  if (valor.length < 6) return 'A senha tem pelo menos 6 caracteres.';
+  return undefined;
+}
+
+export function validarLogin(form: FormularioLogin): ErrosLogin {
+  const erros: ErrosLogin = {};
+  for (const campo of ['email', 'senha'] as const) {
+    const erro = validarCampoLogin(campo, form[campo]);
+    if (erro) erros[campo] = erro;
+  }
+  return erros;
+}
+
+// ---------- Categoria ----------
+
+// Compara nomes sem diferenciar maiúsculas e acentos ("moveis" = "Móveis")
+export function chaveCategoria(nome: string) {
+  return nome.trim().normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+}
+
+export function validarNomeCategoria(nome: string, existentes: string[] = []): string | undefined {
+  const texto = nome.trim();
+  if (!texto) return 'Informe o nome da categoria.';
+  if (texto.length < LIMITES_CATEGORIA.min) return `Use pelo menos ${LIMITES_CATEGORIA.min} caracteres.`;
+  if (texto.length > LIMITES_CATEGORIA.max) return `Use no máximo ${LIMITES_CATEGORIA.max} caracteres.`;
+  if (existentes.some((e) => chaveCategoria(e) === chaveCategoria(texto))) return 'Já existe uma categoria com esse nome.';
+  return undefined;
 }

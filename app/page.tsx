@@ -11,10 +11,10 @@ import { PackageOpen, Plus, RefreshCw, Search, SearchX, WifiOff, X } from 'lucid
 import ItemCard from '@/components/ItemCard';
 import Modal from '@/components/Modal';
 import ToastContainer from '@/components/Toast';
-import { buscarProdutos, excluirProduto } from '@/lib/api';
+import { buscarCategorias, buscarProdutos, excluirProduto } from '@/lib/api';
 import { nomeCategoria, normalizar } from '@/lib/formatar';
 import { pegarAviso, useToasts } from '@/lib/useToasts';
-import { CATEGORIAS, Produto } from '@/types/item';
+import { Categoria, Produto } from '@/types/item';
 
 type Ordem = 'recentes' | 'menor-preco' | 'maior-preco' | 'nome';
 
@@ -43,6 +43,7 @@ function CardEsqueleto() {
 
 export default function PaginaInicial() {
   const [produtos, setProdutos] = useState<Produto[]>([]);
+  const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [erroApi, setErroApi] = useState('');
   const [busca, setBusca] = useState('');
@@ -55,10 +56,11 @@ export default function PaginaInicial() {
   // GET ao abrir a página
   useEffect(() => {
     let ativo = true;
-    buscarProdutos()
-      .then((lista) => {
+    Promise.all([buscarProdutos(), buscarCategorias()])
+      .then(([lista, cats]) => {
         if (!ativo) return;
         setProdutos(lista);
+        setCategorias(cats);
         // Aviso deixado pela página anterior (ex.: "Produto cadastrado")
         const aviso = pegarAviso();
         if (aviso) mostrar(aviso);
@@ -78,8 +80,9 @@ export default function PaginaInicial() {
     setCarregando(true);
     setErroApi('');
     try {
-      const lista = await buscarProdutos();
+      const [lista, cats] = await Promise.all([buscarProdutos(), buscarCategorias()]);
       setProdutos(lista);
+      setCategorias(cats);
       mostrar(lista.length === 1 ? 'Lista atualizada: 1 produto.' : `Lista atualizada: ${lista.length} produtos.`);
     } catch (erro) {
       const mensagem = erro instanceof Error ? erro.message : 'Erro ao buscar os produtos.';
@@ -137,12 +140,8 @@ export default function PaginaInicial() {
         <div>
           <p className="sobretitulo">Catálogo</p>
           <h1 className="titulo">Produtos</h1>
-          <p className="subtitulo">Pesquise, filtre por categoria e abra um produto para ver os detalhes.</p>
+          <p className="subtitulo">Cadastre, encontre e remova os produtos da loja, com preço, categoria e foto.</p>
         </div>
-        <Link href="/novo" className="botao botao-primario">
-          <Plus size={18} aria-hidden="true" />
-          Novo produto
-        </Link>
       </section>
 
       <div className="ferramentas">
@@ -191,10 +190,10 @@ export default function PaginaInicial() {
           Todas
           <span className="chip-numero">{produtos.length}</span>
         </button>
-        {CATEGORIAS.map((c) => (
-          <button key={c} type="button" className="chip" aria-pressed={categoria === c} onClick={() => setCategoria(c)}>
-            {nomeCategoria(c)}
-            <span className="chip-numero">{contagemPorCategoria[c] ?? 0}</span>
+        {categorias.map((c) => (
+          <button key={c.id} type="button" className="chip" aria-pressed={categoria === c.nome} onClick={() => setCategoria(c.nome)}>
+            {c.nome}
+            <span className="chip-numero">{contagemPorCategoria[c.nome] ?? 0}</span>
           </button>
         ))}
       </div>

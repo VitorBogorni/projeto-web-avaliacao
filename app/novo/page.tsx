@@ -5,17 +5,16 @@
 // Valida na tela (lib/validacao.ts), envia com POST e mostra
 // os erros que o servidor devolver. Tem pré-visualização do card.
 // ==========================================================================
-import { FormEvent, useRef, useState } from 'react';
+import { FormEvent, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { CircleAlert, LoaderCircle } from 'lucide-react';
 import FormField from '@/components/FormField';
 import ItemCard from '@/components/ItemCard';
-import { cadastrarProduto, ErroApi } from '@/lib/api';
-import { nomeCategoria } from '@/lib/formatar';
+import { buscarCategorias, cadastrarProduto, ErroApi } from '@/lib/api';
 import { guardarAviso } from '@/lib/useToasts';
 import { converterPreco, ErrosFormulario, LIMITES, validarCampo, validarProduto } from '@/lib/validacao';
-import { CATEGORIAS, FormularioProduto } from '@/types/item';
+import { Categoria, FormularioProduto } from '@/types/item';
 
 const FORM_VAZIO: FormularioProduto = {
   title: '',
@@ -43,19 +42,40 @@ export default function NovoProdutoPage() {
   const [erros, setErros] = useState<ErrosFormulario>({});
   const [erroEnvio, setErroEnvio] = useState('');
   const [enviando, setEnviando] = useState(false);
+  const [categorias, setCategorias] = useState<Categoria[]>([]);
+  const [carregandoCategorias, setCarregandoCategorias] = useState(true);
+  const nomesCategorias = categorias.map((c) => c.nome);
+
+  // GET /api/categorias para montar a lista do campo Categoria
+  useEffect(() => {
+    let ativo = true;
+    buscarCategorias()
+      .then((lista) => {
+        if (ativo) setCategorias(lista);
+      })
+      .catch((erro: Error) => {
+        if (ativo) setErroEnvio(`Não foi possível carregar as categorias. ${erro.message}`);
+      })
+      .finally(() => {
+        if (ativo) setCarregandoCategorias(false);
+      });
+    return () => {
+      ativo = false;
+    };
+  }, []);
 
   function alterar(campo: keyof FormularioProduto, valor: string) {
     setForm((atual) => ({ ...atual, [campo]: valor }));
     // Se o campo já estava com erro, revalida enquanto a pessoa corrige
     if (erros[campo]) {
-      setErros((atual) => ({ ...atual, [campo]: validarCampo(campo, valor) }));
+      setErros((atual) => ({ ...atual, [campo]: validarCampo(campo, valor, nomesCategorias) }));
     }
   }
 
   // Valida ao sair do campo, sem esperar o envio (campo vazio só reclama no envio)
   function aoSair(campo: keyof FormularioProduto) {
     if (!form[campo].trim() && !erros[campo]) return;
-    setErros((atual) => ({ ...atual, [campo]: validarCampo(campo, form[campo]) }));
+    setErros((atual) => ({ ...atual, [campo]: validarCampo(campo, form[campo], nomesCategorias) }));
   }
 
   // Atributos comuns de cada campo: acessibilidade + validação ao sair
@@ -74,7 +94,7 @@ export default function NovoProdutoPage() {
   async function enviar(e: FormEvent) {
     e.preventDefault();
     setErroEnvio('');
-    const encontrados = validarProduto(form);
+    const encontrados = validarProduto(form, nomesCategorias);
     setErros(encontrados);
 
     const primeiroErro = ORDEM_CAMPOS.find((campo) => encontrados[campo]);
@@ -143,10 +163,10 @@ export default function NovoProdutoPage() {
           <div className="linha-dupla">
             <FormField id="category" label="Categoria" required error={erros.category} hint={DICAS.category}>
               <select value={form.category} onChange={(e) => alterar('category', e.target.value)} {...propsCampo('category')}>
-                <option value="">Selecione</option>
-                {CATEGORIAS.map((categoria) => (
-                  <option key={categoria} value={categoria}>
-                    {nomeCategoria(categoria)}
+                <option value="">{carregandoCategorias ? 'Carregando...' : 'Selecione'}</option>
+                {categorias.map((categoria) => (
+                  <option key={categoria.id} value={categoria.nome}>
+                    {categoria.nome}
                   </option>
                 ))}
               </select>
@@ -198,6 +218,15 @@ export default function NovoProdutoPage() {
               {...propsCampo('description')}
             />
           </FormField>
+
+          {!carregandoCategorias && categorias.length === 0 && !erroEnvio && (
+            <div className="alerta alerta-aviso" role="status">
+              <CircleAlert size={18} aria-hidden="true" />
+              <span>
+                Nenhuma categoria cadastrada. <Link href="/categorias">Cadastre uma categoria</Link> antes do produto.
+              </span>
+            </div>
+          )}
 
           {erroEnvio && (
             <div className="alerta alerta-erro" role="alert">

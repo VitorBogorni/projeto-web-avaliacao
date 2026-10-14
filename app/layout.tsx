@@ -1,11 +1,10 @@
 // ==========================================================================
-// LAYOUT · Moldura de todas as páginas: menu no topo, conteúdo, rodapé
-// e o painel "Requisições". Também define a fonte e o idioma (pt-BR).
+// LAYOUT · Moldura de todas as páginas: menu no topo e conteúdo.
+// Também define a fonte e o idioma (pt-BR).
 // ==========================================================================
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import Navbar from '@/components/Navbar';
-import RegistroApi from '@/components/RegistroApi';
 import './globals.css';
 
 const inter = Inter({
@@ -36,14 +35,7 @@ export default function RootLayout({
           <main id="conteudo-principal" className="conteudo">
             {children}
           </main>
-          <footer className="rodape">
-            <div className="rodape-interno">
-              <span>Avaliação 2 · Desenvolvimento Web</span>
-              <span>Front-end e API própria em Next.js</span>
-            </div>
-          </footer>
         </div>
-        <RegistroApi />
       </body>
     </html>
   );

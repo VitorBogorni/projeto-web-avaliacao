@@ -1,5 +1,5 @@
 // ==========================================================================
-// TIPOS · Formato de um produto, do formulário e a lista de categorias.
+// TIPOS · Formato de um produto, de uma categoria e do formulário.
 // ==========================================================================
 export interface Produto {
   id: number;
@@ -22,15 +22,20 @@ export interface FormularioProduto {
   description: string;
 }
 
-// Categorias disponíveis no select
-export const CATEGORIAS = [
-  'beauty',
-  'fragrances',
-  'furniture',
-  'groceries',
-];
+// Categoria: o produto guarda o nome dela (ex.: "Perfumes")
+export interface Categoria {
+  id: string;
+  nome: string;
+  // De onde veio: servidor ou cadastrada neste navegador
+  origem?: 'api' | 'local';
+}
 
-// Nome de cada categoria na tela (o valor em inglês é o que a API usa)
+// Categorias com que o sistema começa (podem ser excluídas e novas podem ser cadastradas)
+export const CATEGORIAS_INICIAIS = ['Beleza', 'Perfumes', 'Móveis', 'Mercado'];
+
+export const LIMITES_CATEGORIA = { min: 2, max: 30 };
+
+// Nomes antigos em inglês (de testes anteriores) mostrados em português
 export const NOMES_CATEGORIAS: Record<string, string> = {
   beauty: 'Beleza',
   fragrances: 'Perfumes',
