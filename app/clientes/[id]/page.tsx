@@ -101,15 +101,15 @@ function DetalhesConteudo({ params }: PageProps) {
             </p>
 
             <div style={{ margin: '1rem 0' }}>
-              <h3 style={{ fontSize: '1rem', marginBottom: '0.4rem', color: '#111' }}>
+              <h2 style={{ fontSize: '1rem', marginBottom: '0.4rem', color: '#111' }}>
                 Descrição:
-              </h3>
+              </h2>
               <p style={{ color: '#555', lineHeight: '1.6' }}>
                 {produto.description}
               </p>
             </div>
 
-            <p style={{ fontSize: '0.85rem', color: '#777', marginTop: 'auto' }}>
+            <p style={{ fontSize: '0.85rem', color: '#555', marginTop: 'auto' }}>
               Endpoint consultado: <code>GET https://dummyjson.com/products/{produto.id}</code>
             </p>
 

@@ -6,6 +6,8 @@ import { Produto, CATEGORIAS } from '@/types/item';
 import { buscarProdutos, excluirProduto } from '@/lib/api';
 import ItemCard from '@/components/ItemCard';
 import Modal from '@/components/Modal';
+import ToastContainer from '@/components/Toast';
+import { ToastMessage } from '@/types/cliente';
 
 export default function PaginaInicial() {
   const [produtos, setProdutos] = useState<Produto[]>([]);
@@ -13,6 +15,15 @@ export default function PaginaInicial() {
   const [busca, setBusca] = useState('');
   const [categoria, setCategoria] = useState('todas');
   const [itemParaExcluir, setItemParaExcluir] = useState<Produto | null>(null);
+  const [erroApi, setErroApi] = useState('');
+  const [toasts, setToasts] = useState<ToastMessage[]>([]);
+
+  // Aviso que some sozinho depois de 4 segundos (componente Toast)
+  function avisar(texto: string, tipo: ToastMessage['tipo']) {
+    const id = String(Date.now());
+    setToasts((atuais) => [...atuais, { id, texto, tipo }]);
+    setTimeout(() => setToasts((atuais) => atuais.filter((t) => t.id !== id)), 4000);
+  }
 
   // 1. Chamada GET ao carregar a página
   useEffect(() => {
@@ -22,10 +33,11 @@ export default function PaginaInicial() {
   async function carregarDados() {
     try {
       setCarregando(true);
+      setErroApi('');
       const lista = await buscarProdutos();
       setProdutos(lista);
     } catch (erro) {
-      console.error('Erro ao buscar dados:', erro);
+      setErroApi(erro instanceof Error ? erro.message : 'Erro ao buscar os produtos.');
     } finally {
       setCarregando(false);
     }
@@ -47,9 +59,10 @@ export default function PaginaInicial() {
       // Remove da tela após exclusão
       setProdutos(produtos.filter((p) => p.id !== itemParaExcluir.id));
       setItemParaExcluir(null);
-      alert('Produto excluído com sucesso via API pública (DELETE)!');
+      avisar(`Produto "${itemParaExcluir.title}" excluído.`, 'sucesso');
     } catch {
-      alert('Erro ao excluir produto.');
+      setItemParaExcluir(null);
+      avisar('Erro ao excluir produto. Tente de novo.', 'erro');
     }
   }
 
@@ -114,6 +127,13 @@ export default function PaginaInicial() {
         <div className="estado-aviso">
           <p>Carregando produtos...</p>
         </div>
+      ) : erroApi ? (
+        <div className="estado-aviso" role="alert">
+          <p style={{ marginBottom: '1rem' }}>{erroApi}</p>
+          <button type="button" onClick={carregarDados} className="btn-primario">
+            Tentar de novo
+          </button>
+        </div>
       ) : produtosFiltrados.length === 0 ? (
         <div className="estado-aviso">
           <p style={{ marginBottom: '1rem' }}>
@@ -149,6 +169,8 @@ export default function PaginaInicial() {
           Esta ação enviará uma requisição <code>DELETE</code> para a API pública.
         </p>
       </Modal>
+
+      <ToastContainer toasts={toasts} onRemove={(id) => setToasts((atuais) => atuais.filter((t) => t.id !== id))} />
     </div>
   );
 }

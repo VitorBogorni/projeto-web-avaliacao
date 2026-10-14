@@ -4,11 +4,15 @@ const STORAGE_KEY = 'produtos_adicionados_usuario';
 
 // 1. Operação GET: Faz a requisição GET na API pública e retorna os produtos adicionados pelo usuário
 export async function buscarProdutos() {
+  // Executa a requisição GET real na API pública; se falhar, a tela mostra o erro
+  let resposta: Response;
   try {
-    // Executa a requisição GET real na API pública
-    await fetch(`${API_URL}?limit=1`);
-  } catch (err) {
-    console.warn('Aviso de rede na API pública:', err);
+    resposta = await fetch(`${API_URL}?limit=1`);
+  } catch {
+    throw new Error('Sem conexão com a API pública. Verifique a internet e tente de novo.');
+  }
+  if (!resposta.ok) {
+    throw new Error(`A API pública respondeu com erro (${resposta.status}). Tente de novo.`);
   }
 
   if (typeof window === 'undefined') return [];
