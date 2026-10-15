@@ -15,7 +15,7 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: 'Catálogo de Produtos',
-  description: 'Catálogo de produtos que consome a API REST pública DummyJSON (GET, POST e DELETE).',
+  description: 'Catálogo de produtos com telas e API REST próprias em Next.js (GET, POST, PATCH e DELETE).',
 };
 
 export default function RootLayout({

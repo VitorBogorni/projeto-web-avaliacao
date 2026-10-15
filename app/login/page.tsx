@@ -83,9 +83,10 @@ export default function LoginPage() {
           <Package size={28} strokeWidth={2.2} />
         </span>
         <p className="sobretitulo">Catálogo de Produtos</p>
-        <h2 id="login-objetivo" className="login-titulo">
+        {/* Parágrafo, não título: o título principal da página é o "Entrar" (h1) */}
+        <p id="login-objetivo" className="login-titulo">
           O catálogo da sua loja, organizado em um só lugar.
-        </h2>
+        </p>
         <p className="login-texto">
           Cadastre, consulte e remova produtos com preço, categoria e foto, pelo computador ou pelo celular.
         </p>

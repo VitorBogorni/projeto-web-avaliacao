@@ -42,13 +42,3 @@ export const NOMES_CATEGORIAS: Record<string, string> = {
   furniture: 'Móveis',
   groceries: 'Mercado',
 };
-
-// Compatibilidade
-export type GaleriaItem = Produto & {
-  titulo?: string;
-  descricao?: string;
-  preco?: number;
-  categoria?: string;
-  imagemUrl?: string;
-  status?: string;
-};

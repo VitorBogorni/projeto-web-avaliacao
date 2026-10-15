@@ -13,48 +13,44 @@ O projeto tem **front-end e back-end próprios**: as telas (front-end) conversam
 - Dieisson Cardoso: validação do formulário e rotas de dados
 - Régis Balz: componentes reutilizáveis e acessibilidade
 
-## Como funciona (em uma frase)
+## Como acessar
 
-A tela chama uma função de `lib/api.ts` → ela faz uma requisição HTTP para `/api/produtos` → a rota em `app/api` valida, guarda na memória do servidor e responde em JSON → a tela mostra o resultado (ou a mensagem de erro).
+O sistema pede login. O e-mail e a senha ficam nas variáveis de ambiente (veja abaixo) e não aparecem no repositório. Os dados de acesso da versão publicada são enviados junto com o link do site.
 
-```
-Navegador (telas em app/)  ── fetch + JSON ──►  API própria (app/api/)  ──►  lista em memória (lib/servidor/)
-        ▲                                                │
-        └──────────── resposta: 200, 201, 400 ou 404 ◄──┘
-```
+## Como funciona
+
+Cada tela chama uma função de `lib/api.ts`, que faz a requisição HTTP para a API em `app/api`. A rota valida os dados, guarda na memória do servidor e responde em JSON. A tela mostra o resultado ou a mensagem de erro.
 
 ## Mapa do projeto
 
 | Pasta / arquivo | O que é | Lado |
 |---|---|---|
-| `app/login/page.tsx` | **Tela de login**: e-mail e senha validados | Front |
+| `app/login/page.tsx` | Tela de login: e-mail e senha validados | Front |
 | `proxy.ts` | Protege as páginas: sem login vai para `/login`; a API responde 401 | Back |
-| `app/categorias/page.tsx` | **Tela de categorias**: cadastrar e excluir categorias | Front |
-| `app/page.tsx` | **Tela 1 · Início**: lista, busca, filtro por categoria, ordenação, excluir | Front |
-| `app/novo/page.tsx` | **Tela 2 · Novo produto**: formulário com 5 campos validados | Front |
-| `app/produtos/[id]/page.tsx` | **Tela 3 · Detalhes** de um produto (botões Editar e Excluir) | Front |
-| `app/produtos/[id]/editar/page.tsx` | **Editar produto**: mesmo formulário, salva com PATCH | Front |
+| `app/categorias/page.tsx` | Tela de categorias: cadastrar e excluir categorias | Front |
+| `app/page.tsx` | Tela 1 · Início: lista, busca, filtro por categoria, ordenação, excluir | Front |
+| `app/novo/page.tsx` | Tela 2 · Novo produto: formulário com 5 campos validados | Front |
+| `app/produtos/[id]/page.tsx` | Tela 3 · Detalhes de um produto (botões Editar e Excluir) | Front |
+| `app/produtos/[id]/editar/page.tsx` | Editar produto: mesmo formulário, salva com PATCH | Front |
 | `app/layout.tsx` | Moldura de todas as páginas (menu do topo) | Front |
 | `app/globals.css` | Todo o visual (cores, botões, cards, celular) | Front |
 | `components/` | Peças reutilizáveis: `Navbar`, `ItemCard`, `Modal`, `FormField`, `FormularioProduto`, `Toast` | Front |
 | `.env.example` | Lista das variáveis de ambiente (sem os valores) | Config |
-| `lib/api.ts` | **Front falando com o back**: as 4 chamadas HTTP e o tratamento dos erros | Front |
-| `lib/validacao.ts` | Regras de cada campo (usadas na tela **e** no servidor) | Front e back |
+| `lib/api.ts` | Front falando com o back: as 4 chamadas HTTP e o tratamento dos erros | Front |
+| `lib/validacao.ts` | Regras de cada campo (usadas na tela e no servidor) | Front e back |
 | `lib/registro.ts` | Log de cada requisição no console do navegador (F12) | Front |
-| `app/api/produtos/route.ts` | **Rota GET e POST** `/api/produtos` | Back |
-| `app/api/produtos/[id]/route.ts` | **Rota GET, PATCH e DELETE** `/api/produtos/:id` | Back |
-| `app/api/categorias/` | **Rotas GET, POST** `/api/categorias` e **DELETE** `/api/categorias/:id` | Back |
-| `app/api/login/`, `logout/`, `sessao/` | **Rotas de login**: entrar, sair e quem está logado | Back |
+| `app/api/produtos/route.ts` | Rota GET e POST `/api/produtos` | Back |
+| `app/api/produtos/[id]/route.ts` | Rota GET, PATCH e DELETE `/api/produtos/:id` | Back |
+| `app/api/categorias/` | Rotas GET, POST `/api/categorias` e DELETE `/api/categorias/:id` | Back |
+| `app/api/login/`, `logout/`, `sessao/` | Rotas de login: entrar, sair e quem está logado | Back |
 | `app/api/route.ts` | `/api`: lista as rotas da API | Back |
 | `lib/servidor/` | Listas em memória (produtos e categorias), sessão (login) e respostas padronizadas | Back |
 | `types/` | Formato dos dados (produto, formulário, aviso) | Os dois |
 
-Todo arquivo começa com um comentário dizendo o que ele faz.
-
 ## Telas
 
 - **Login (`/login`)**: e-mail e senha obrigatórios, com mensagem de erro em cada campo e aviso de e-mail ou senha incorretos. Mostrar/esconder senha.
-- **Início (`/`)**: começa vazia e mostra os produtos cadastrados em cards. Tem busca pelo nome, filtro por categoria, ordenação por preço ou nome, botão Atualizar e excluir com confirmação.
+- **Início (`/`)**: mostra os produtos em cards (o catálogo já começa com 2 produtos de exemplo). Tem busca pelo nome, filtro por categoria, ordenação por preço ou nome, botão Atualizar e excluir com confirmação.
 - **Novo produto (`/novo`)**: título, categoria, preço, link da imagem e descrição. Todos obrigatórios, com mensagem de erro em cada campo e pré-visualização do card ao lado.
 - **Categorias (`/categorias`)**: cadastrar categoria (nome obrigatório, sem repetir) e excluir. Categoria com produtos não pode ser excluída.
 - **Detalhes (`/produtos/:id`)**: foto grande, preço, descrição e código. Botões Editar e Excluir.
@@ -95,7 +91,6 @@ As telas usam GET, POST, PATCH (editar) e DELETE.
 - botões só com ícone têm `aria-label`; menu e filtros informam o estado (`aria-expanded`, `aria-pressed`, `aria-current`)
 - modal com foco no "Cancelar", fecha com Esc
 - respeita "reduzir movimento" do sistema
-- Lighthouse: acessibilidade 100 nas três telas (celular e computador)
 
 ## Variáveis de ambiente
 

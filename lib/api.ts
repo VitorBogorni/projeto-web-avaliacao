@@ -4,7 +4,7 @@
 // PATCH /api/produtos/:id, DELETE /api/produtos/:id.
 // Categorias: GET /api/categorias, POST /api/categorias, DELETE /api/categorias/:id.
 // Login: POST /api/login, POST /api/logout, GET /api/sessao.
-// Cada requisição é registrada (console + painel) e todo erro vira ErroApi com o código HTTP.
+// Cada requisição é registrada no console do navegador e todo erro vira ErroApi com o código HTTP.
 // ==========================================================================
 import { Categoria, Produto } from '@/types/item';
 import { descreverStatus, registrar } from '@/lib/registro';
@@ -66,7 +66,7 @@ const idsExcluidos = () => lerLista<number>(EXCLUIDOS_KEY);
 
 // ---------- Comunicação com a API ----------
 
-// Faz a requisição, registra no console e no painel, e transforma erro em ErroApi
+// Faz a requisição, registra no console e transforma erro em ErroApi
 async function requisitar<T>(caminho: string, opcoes: RequestInit = {}): Promise<T> {
   const metodo = opcoes.method ?? 'GET';
   const endereco = `${API_URL}${caminho}`;
@@ -261,9 +261,3 @@ export async function sessaoAtual(): Promise<Usuario | null> {
     return null;
   }
 }
-
-// Compatibilidade
-export const listarItens = buscarProdutos;
-export const obterItemPorId = buscarProdutoPorId;
-export const criarItem = cadastrarProduto;
-export const excluirItem = excluirProduto;
