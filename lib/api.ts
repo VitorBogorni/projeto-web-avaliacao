@@ -101,17 +101,22 @@ async function requisitar<T>(caminho: string, opcoes: RequestInit = {}): Promise
   return dados as T;
 }
 
-// 1. GET /api/produtos: lista do servidor + o que este navegador cadastrou, sem os excluídos
+// 1. GET /api/produtos
+// Na Vercel o servidor roda em várias cópias, cada uma com a sua memória. Para a lista
+// não mudar a cada recarga, o navegador guarda todo produto que já recebeu e junta
+// com o que vier do servidor (sem os excluídos). Mais novos primeiro.
 export async function buscarProdutos(): Promise<Produto[]> {
   const { produtos } = await requisitar<{ produtos: Produto[] }>('/produtos');
   const excluidos = idsExcluidos();
-  const locais = produtosLocais();
-  const idsLocais = new Set(locais.map((p) => p.id));
+  const conhecidos = produtosLocais();
+  const ids = new Set(conhecidos.map((p) => p.id));
+  const novos = produtos.filter((p) => !ids.has(p.id) && !excluidos.includes(p.id));
+  if (novos.length > 0) gravarLista(STORAGE_KEY, [...conhecidos, ...novos]);
 
-  return [
-    ...locais.map((p) => ({ ...p, origem: 'local' as const })),
-    ...produtos.filter((p) => !idsLocais.has(p.id) && !excluidos.includes(p.id)).map((p) => ({ ...p, origem: 'api' as const })),
-  ];
+  return [...conhecidos, ...novos]
+    .filter((p) => !excluidos.includes(p.id))
+    .sort((a, b) => b.id - a.id)
+    .map((p) => ({ ...p, origem: 'local' as const }));
 }
 
 // 2. GET /api/produtos/:id
@@ -189,12 +194,15 @@ const categoriasExcluidas = () => lerLista<string>(CATEGORIAS_EXCLUIDAS_KEY);
 export async function buscarCategorias(): Promise<Categoria[]> {
   const { categorias } = await requisitar<{ categorias: Categoria[] }>('/categorias');
   const excluidas = categoriasExcluidas();
-  const doServidor = categorias.filter((c) => !excluidas.includes(c.id)).map((c) => ({ ...c, origem: 'api' as const }));
-  const ids = new Set(doServidor.map((c) => c.id));
-  const locais = categoriasLocais()
-    .filter((c) => !ids.has(c.id) && !excluidas.includes(c.id))
-    .map((c) => ({ ...c, origem: 'local' as const }));
-  return [...doServidor, ...locais].sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
+  // Mesma ideia dos produtos: guarda as que já recebeu para a lista não mudar a cada recarga
+  const conhecidas = categoriasLocais();
+  const ids = new Set(conhecidas.map((c) => c.id));
+  const novas = categorias.filter((c) => !ids.has(c.id) && !excluidas.includes(c.id));
+  if (novas.length > 0) gravarLista(CATEGORIAS_KEY, [...conhecidas, ...novas]);
+
+  return [...conhecidas, ...novas]
+    .filter((c) => !excluidas.includes(c.id))
+    .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
 }
 
 // POST /api/categorias

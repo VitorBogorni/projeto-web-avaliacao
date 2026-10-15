@@ -9,8 +9,28 @@ import { converterPreco, ErrosFormulario, validarCampo } from '@/lib/validacao';
 
 const global = globalThis as typeof globalThis & { __catalogo?: Produto[] };
 
+// Produtos com que o catálogo começa (iguais em todas as cópias do servidor)
+const PRODUTOS_INICIAIS: Produto[] = [
+  {
+    id: 1,
+    title: 'Perfume CK One 100 ml',
+    category: 'Perfumes',
+    price: 349.9,
+    thumbnail: 'https://cdn.dummyjson.com/product-images/fragrances/calvin-klein-ck-one/thumbnail.webp',
+    description: 'Perfume unissex com notas cítricas e frescas, frasco de 100 ml.',
+  },
+  {
+    id: 2,
+    title: 'Cama de casal Colombo',
+    category: 'Móveis',
+    price: 2499.9,
+    thumbnail: 'https://cdn.dummyjson.com/product-images/furniture/annibale-colombo-bed/thumbnail.webp',
+    description: 'Cama de casal com cabeceira estofada e acabamento em madeira.',
+  },
+];
+
 function catalogo(): Produto[] {
-  global.__catalogo ??= [];
+  global.__catalogo ??= PRODUTOS_INICIAIS.map((p) => ({ ...p }));
   return global.__catalogo;
 }
 
